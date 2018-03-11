@@ -16,7 +16,6 @@
 /*                                                                            */
 /*  MIT license, all text above must be included in any redistribution.       */
 
-#include "ili9328.h"
 
 #define C16(_rr,_gg,_bb) ((ushort)(((_rr & 0xF8) << 8) | ((_gg & 0xFC) << 3) | ((_bb & 0xF8) >> 3)))
 
@@ -43,15 +42,15 @@ uint16_t _paletteW[] =
   C16(222, 222, 255),  // 15 whiteish
 };
 
-void drawIndexedmap(ili9328SPI* tft, uint8_t* indexmap, int16_t x, uint16_t y) {
+void drawIndexedmap(uint8_t* indexmap, int16_t x, uint16_t y) {
   byte i = 0;
-  word color = (word)_paletteW[indexmap[0]];
+  uint16_t color = _paletteW[indexmap[0]];
   for (byte tmpY = 0; tmpY < 8; tmpY++) {
     byte width = 1;
     for (byte tmpX = 0; tmpX < 8; tmpX++) {
-      word next_color = (word)_paletteW[indexmap[++i]];
+      uint16_t next_color = _paletteW[indexmap[++i]];
       if ((color != next_color && width >= 1) || tmpX == 7) {
-        tft->drawFastHLine1(x + tmpX - width + 1, y + tmpY, width - 1, color);
+        M5.Lcd.drawFastHLine(x + tmpX - width, y + tmpY, width, color);
         color = next_color;
         width = 0;
       }
@@ -59,3 +58,4 @@ void drawIndexedmap(ili9328SPI* tft, uint8_t* indexmap, int16_t x, uint16_t y) {
     }
   }
 }
+

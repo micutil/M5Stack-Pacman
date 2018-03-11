@@ -22,9 +22,18 @@
  *  Buttons UP, RIGHT, DOWN, LEFT, PAUSE and RESTART are each assigned on characters '8', '6', '2', '4', 'x', 'z' in the both case of SerialPort and WiFi UDP.
  */
 
-const char ssid[] = "ESP32";
-const char password[] = "esp32pass";
-const int localPort = 10000;
+#include <M5Stack.h>
+#include "M5StackUpdater.h"
+#include "Game_Audio.h";
+#include "SoundData.h";
+
+Game_Audio_Class GameAudio(25,0);
+ 
+Game_Audio_Wav_Class pmDeath(pacmanDeath); // pacman dyingsound
+Game_Audio_Wav_Class pmWav(pacman); // pacman theme
+Game_Audio_Wav_Class pmChomp(chomp); // pacman chomp
+Game_Audio_Wav_Class pmEatGhost(pacman_eatghost); // pacman theme
+
 
 byte SPEED = 2; // 1=SLOW 2=NORMAL 4=FAST //do not try  other values!!!
 
@@ -50,15 +59,7 @@ byte GAMEPAUSED = 0;
 
 byte PACMANFALLBACK = 0;
 
-#include <SPI.h>
-#include <WiFi.h>
-#include <WiFiUdp.h>
-
-#include "DrawindexedMap.h"
-#define CS 5
-#define RESET 17
-ili9328SPI tft(CS, RESET);
-WiFiUDP udp;
+#include "DrawIndexedMap.h"
 
 /******************************************************************************/
 /*   Controll KEYPAD LOOP                                                     */
@@ -585,7 +586,7 @@ class Playfield
       byte i = 0;
       word color = (word)_paletteW[n];
 
-      drawIndexedmap(&tft, tile, x, y);
+      drawIndexedmap(tile, x, y);
     }
 
     boolean updateMap [36][28];
@@ -970,6 +971,12 @@ class Playfield
 
     void PackmanDied() {  // Noooo... PACMAN DIED :(
 
+      if(DEMO == 0) {
+        GameAudio.PlayWav(&pmDeath, true, 1.0);
+        // wait until done
+        while(GameAudio.IsPlaying());
+      }
+
       if (LIFES <= 0) {
         GAMEOVER = 1;
         LEVEL = START_LEVEL;
@@ -1015,6 +1022,8 @@ class Playfield
 
         DrawAllBG();
       }
+
+      
     }
 
 
@@ -1154,6 +1163,10 @@ class Playfield
         {
           if (s->state == FrightenedState)
           {
+            if (DEMO == 0) {
+              GameAudio.PlayWav(&pmEatGhost, true, 1.0);
+            }
+            
             s->state = DeadNumberState;     // Killed a ghost
             _frightenedCount++;
             _state = DeadGhostState;
@@ -1243,6 +1256,9 @@ class Playfield
         return;
       byte mask = 0x80 >> (cx & 7);
       _dotMap[(cy - 3) * 4 + (cx >> 3)] &= ~mask;
+      if(DEMO == 0) {
+        GameAudio.PlayWav(&pmChomp, false, 1.0);
+      }
 
       byte t = GetTile(cx, cy);
       if (t == PILL)
@@ -1350,6 +1366,9 @@ class Playfield
       if (but_A && DEMO == 1 && GAMEPAUSED == 0) {
         but_A = false;
         DEMO = 0;
+        GameAudio.PlayWav(&pmWav, false, 1.0);
+        // wait until done
+        //while(GameAudio.IsPlaying()){ }
         Init();
       } else if (but_A && DEMO == 0 && GAMEPAUSED == 0) { // Or PAUSE GAME
         but_A = false;
@@ -1390,15 +1409,25 @@ class Playfield
 /******************************************************************************/
 
 #define BLACK 0x0000 // 16bit BLACK Color
+#define JOY_X 35
+#define JOY_Y 36
 
 void setup() {
   randomSeed(analogRead(0));
   Serial.begin(115200);  
-  WiFi.softAP(ssid, password);
-  udp.begin(localPort);
-  tft.begin();
+  M5.begin();
+  Wire.begin();
+  if(digitalRead(BUTTON_A_PIN) == 0) {
+    Serial.println("Will Load menu binary");
+    updateFromFS(SD);
+    ESP.restart();
+  }
+  M5.Lcd.setRotation(3);
+  M5.Lcd.fillScreen(TFT_BLACK);
+  pinMode(5, INPUT_PULLUP);
+  pinMode(JOY_X, INPUT_PULLUP);
+  pinMode(JOY_Y, INPUT_PULLUP);
   delay(100);
-  tft.fillRect(0, 0, TFT_WIDTH, TFT_HEIGHT, BLACK);
 }
 
 /******************************************************************************/
@@ -1414,26 +1443,47 @@ void ClearKeys() {
   but_RIGHT=false;
 }
 
+
+
+
 void KeyPadLoop(){
-  if (Serial.available()) {
-    char r = Serial.read();
-    if (r == 'z') { ClearKeys();  but_A=true; delay(300); } //else but_A=false;
-    if (r == 'x') { ClearKeys();  but_B=true; delay(300); }  else but_B=false;
-    if (r == '8') { ClearKeys();  but_UP=true; }  //else but_UP=false;
-    if (r == '2') { ClearKeys();  but_DOWN=true; }  //else but_DOWN=false;
-    if (r == '4') { ClearKeys();  but_LEFT=true; }  // else but_LEFT=false;
-    if (r == '6') { ClearKeys();  but_RIGHT=true; }  //else but_RIGHT=false;
+
+  uint16_t joyX = analogRead(JOY_X);
+  uint16_t joyY = analogRead(JOY_Y);
+  
+  if(digitalRead(BUTTON_A_PIN) == 0) {
+    // select
+    ClearKeys();
+    but_A=true; delay(300);
   }
-  if (udp.parsePacket()) {
-    char r = udp.read();
-    if (r == 'z') { ClearKeys();  but_A=true; delay(300); } //else but_A=false;
-    if (r == 'x') { ClearKeys();  but_B=true; delay(300); }  else but_B=false;
-    if (r == '8') { ClearKeys();  but_UP=true; }  //else but_UP=false;
-    if (r == '2') { ClearKeys();  but_DOWN=true; }  //else but_DOWN=false;
-    if (r == '4') { ClearKeys();  but_LEFT=true; }  // else but_LEFT=false;
-    if (r == '6') { ClearKeys();  but_RIGHT=true; }  //else but_RIGHT=false;  
+  if(digitalRead(BUTTON_B_PIN) == 0) {
+    // start
+    ClearKeys();
+    but_B=true; delay(300);
   }
+  if(digitalRead(BUTTON_C_PIN) == 0) {
+    // ?
+  }
+
+  if(joyX<=500 /*&& joyX!=0*/) {
+    ClearKeys();
+    but_DOWN=true;
+  }
+  if(joyX>=3500 /*&& joyX!=4095*/) {
+    ClearKeys();
+    but_UP=true;
+  }
+  if(joyY<=500 /*&& joyX!=0*/) {
+    ClearKeys();
+    but_LEFT=true;
+  }
+  if(joyY>=3500 /*&& joyX!=4095*/) {
+    ClearKeys();
+    but_RIGHT=true;
+  }
+
 }
+
 
 Playfield _game;
 void loop() {
