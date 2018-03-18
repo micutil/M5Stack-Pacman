@@ -12,7 +12,7 @@ A fork from [MhageGH/esp32_ILI9328_Pacman](https://github.com/MhageGH/esp32_ILI9
 - [arduino-esp32](https://github.com/espressif/arduino-esp32)
 
 ## Coding reference
-- [Macbug tutorial](https://macsbug.wordpress.com/2018/03/07/pacman-with-m5stack/)
+- [Macsbug tutorial](https://macsbug.wordpress.com/2018/03/07/pacman-with-m5stack/)
 - [Pacman-Arduino-Due](https://github.com/DrNCXCortex/Pacman-Arduino-Due)
 - [MhageGH/esp32_ILI9328_Pacman](https://github.com/MhageGH/esp32_ILI9328_Pacman)
 
