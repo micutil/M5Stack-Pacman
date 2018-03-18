@@ -1412,6 +1412,8 @@ class Playfield
 #define JOY_X 35
 #define JOY_Y 36
 
+bool joyPadDetected = false;
+
 void setup() {
   randomSeed(analogRead(0));
   Serial.begin(115200);  
@@ -1425,8 +1427,28 @@ void setup() {
   M5.Lcd.setRotation(3);
   M5.Lcd.fillScreen(TFT_BLACK);
   pinMode(5, INPUT_PULLUP);
-  pinMode(JOY_X, INPUT_PULLUP);
-  pinMode(JOY_Y, INPUT_PULLUP);
+  
+  pinMode(JOY_X, INPUT);
+  pinMode(JOY_Y, INPUT);
+  
+  float totalx = 0;
+  float totaly = 0;
+  uint16_t i;
+  for(i=0;i<1000;i++) {
+    totalx +=analogRead(JOY_X);
+    totaly +=analogRead(JOY_Y);
+  }
+  totalx /=i;
+  totaly /=i;
+
+  if(totalx<10 && totaly<10) { 
+    Serial.print( totalx);
+    Serial.print("**--\t--**");
+    Serial.println( totaly);
+    Serial.println("No Joypad detected, disabling");
+  } else {
+    joyPadDetected = true;
+  }
   delay(100);
 }
 
@@ -1447,9 +1469,6 @@ void ClearKeys() {
 
 
 void KeyPadLoop(){
-
-  uint16_t joyX = analogRead(JOY_X);
-  uint16_t joyY = analogRead(JOY_Y);
   
   if(digitalRead(BUTTON_A_PIN) == 0) {
     // select
@@ -1465,23 +1484,42 @@ void KeyPadLoop(){
     // ?
   }
 
-  if(joyX<=500 /*&& joyX!=0*/) {
-    ClearKeys();
-    but_DOWN=true;
-  }
-  if(joyX>=3500 /*&& joyX!=4095*/) {
-    ClearKeys();
-    but_UP=true;
-  }
-  if(joyY<=500 /*&& joyX!=0*/) {
-    ClearKeys();
-    but_LEFT=true;
-  }
-  if(joyY>=3500 /*&& joyX!=4095*/) {
-    ClearKeys();
-    but_RIGHT=true;
-  }
+  if(joyPadDetected) {
+    uint16_t joyX = analogRead(JOY_X);
+    uint16_t joyY = analogRead(JOY_Y);
+    if(joyX<=500 /*&& joyX!=0*/) {
+      ClearKeys();
+      but_DOWN=true;
+      Serial.print(joyX);
+      Serial.print("\t");
+      Serial.println(joyY);
+    }
+    if(joyX>=3500 /*&& joyX!=4095*/) {
+      ClearKeys();
+      but_UP=true;
+      Serial.print(joyX);
+      Serial.print("\t");
+      Serial.println(joyY);
+    }
+    if(joyY<=500 /*&& joyX!=0*/) {
+      ClearKeys();
+      but_LEFT=true;
+      Serial.print(joyX);
+      Serial.print("\t");
+      Serial.println(joyY);
+    }
+    if(joyY>=3500 /*&& joyX!=4095*/) {
+      ClearKeys();
+      but_RIGHT=true;
+      Serial.print(joyX);
+      Serial.print("\t");
+      Serial.println(joyY);
+    }
+  } else {
 
+    // controls ?
+    
+  }
 }
 
 
