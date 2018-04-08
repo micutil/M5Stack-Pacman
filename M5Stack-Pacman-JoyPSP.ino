@@ -1474,51 +1474,43 @@ void KeyPadLoop(){
     // select
     ClearKeys();
     but_A=true; delay(300);
+    return;
   }
   if(digitalRead(BUTTON_B_PIN) == 0) {
     // start
     ClearKeys();
     but_B=true; delay(300);
+    return;
   }
-  if(digitalRead(BUTTON_C_PIN) == 0) {
-    // ?
-  }
+  // if(digitalRead(BUTTON_C_PIN) == 0) ?
 
   if(joyPadDetected) {
     uint16_t joyX = analogRead(JOY_X);
     uint16_t joyY = analogRead(JOY_Y);
-    if(joyX<=500 /*&& joyX!=0*/) {
-      ClearKeys();
-      but_DOWN=true;
-      Serial.print(joyX);
-      Serial.print("\t");
-      Serial.println(joyY);
-    }
-    if(joyX>=3500 /*&& joyX!=4095*/) {
-      ClearKeys();
-      but_UP=true;
-      Serial.print(joyX);
-      Serial.print("\t");
-      Serial.println(joyY);
-    }
-    if(joyY<=500 /*&& joyX!=0*/) {
-      ClearKeys();
-      but_LEFT=true;
-      Serial.print(joyX);
-      Serial.print("\t");
-      Serial.println(joyY);
-    }
-    if(joyY>=3500 /*&& joyX!=4095*/) {
-      ClearKeys();
-      but_RIGHT=true;
-      Serial.print(joyX);
-      Serial.print("\t");
-      Serial.println(joyY);
-    }
+    if(joyX<=500)  { ClearKeys(); but_DOWN=true;  }
+    if(joyX>=3500) { ClearKeys(); but_UP=true;    }
+    if(joyY<=500)  { ClearKeys(); but_LEFT=true;  }
+    if(joyY>=3500) { ClearKeys(); but_RIGHT=true; }
   } else {
-
-    // controls ?
-    
+    char r;
+    if(digitalRead(5) == LOW) {
+      Wire.requestFrom(0X88, 1);         // request 1 byte from keyboard
+      while (Wire.available()) { 
+        uint8_t key_val = Wire.read();   // receive a byte as character
+        if ( key_val == 191) { r = 'z';} // select
+        if ( key_val == 127) { r = 'x';} // start
+        if ( key_val == 247) { r = '8';} // up
+        if ( key_val == 251) { r = '2';} // down
+        if ( key_val == 254) { r = '4';} // left
+        if ( key_val == 253) { r = '6';} // right
+      }
+    }
+    if (r == 'z') { ClearKeys(); but_A=true; delay(300); } //else but_A=false;
+    if (r == 'x') { ClearKeys(); but_B=true; delay(300); } //else but_B=false;
+    if (r == '8') { ClearKeys(); but_UP=true; }  //else but_UP=false;
+    if (r == '2') { ClearKeys(); but_DOWN=true; }  //else but_DOWN=false;
+    if (r == '4') { ClearKeys(); but_LEFT=true; }   //else but_LEFT=false;
+    if (r == '6') { ClearKeys(); but_RIGHT=true; }  //else but_RIGHT=false;
   }
 }
 
