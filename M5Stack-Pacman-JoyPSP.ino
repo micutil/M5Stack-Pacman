@@ -24,8 +24,8 @@
 
 #include <M5Stack.h>
 #include "M5StackUpdater.h"
-#include "Game_Audio.h";
-#include "SoundData.h";
+#include "Game_Audio.h"
+#include "SoundData.h"
 
 Game_Audio_Class GameAudio(25,0);
  
