@@ -24,8 +24,8 @@
 
 #include <M5Stack.h>
 #include "M5StackUpdater.h"
-#include "Game_Audio.h";
-#include "SoundData.h";
+#include "Game_Audio.h"
+#include "SoundData.h"
 
 Game_Audio_Class GameAudio(25,0);
  
@@ -33,6 +33,8 @@ Game_Audio_Wav_Class pmDeath(pacmanDeath); // pacman dyingsound
 Game_Audio_Wav_Class pmWav(pacman); // pacman theme
 Game_Audio_Wav_Class pmChomp(chomp); // pacman chomp
 Game_Audio_Wav_Class pmEatGhost(pacman_eatghost); // pacman theme
+
+SDUpdater sdUpdater;
 
 
 byte SPEED = 2; // 1=SLOW 2=NORMAL 4=FAST //do not try  other values!!!
@@ -183,7 +185,7 @@ const byte _opposite[] = { MStopped, MLeft, MUp, MRight, MDown };
 
 const byte _scatterChase[] = { 7, 20, 7, 20, 5, 20, 5, 0 };
 const byte _scatterTargets[] = { 2, 0, 25, 0, 0, 35, 27, 35 }; // inky/clyde scatter targets are backwards
-const char _pinkyTargetOffset[] = { 4, 0, 0, 4, -4, 0, -4, 4 }; // Includes pinky target bug
+const signed char _pinkyTargetOffset[] = { 4, 0, 0, 4, -4, 0, -4, 4 }; // Includes pinky target bug
 
 #define FRIGHTENEDGHOSTSPRITE 0
 #define GHOSTSPRITE 2
@@ -873,14 +875,14 @@ class Playfield
             {
               case PINKY:
                 {
-                  const char* pto = _pinkyTargetOffset + ((pacman->dir - 1) << 1);
+                  const signed char* pto = _pinkyTargetOffset + ((pacman->dir - 1) << 1);
                   tx += pgm_read_byte(pto);
                   ty += pgm_read_byte(pto + 1);
                 }
                 break;
               case INKY:
                 {
-                  const char* pto = _pinkyTargetOffset + ((pacman->dir - 1) << 1);
+                  const signed char* pto = _pinkyTargetOffset + ((pacman->dir - 1) << 1);
                   Sprite* binky = _sprites + BINKY;
                   tx += pgm_read_byte(pto) >> 1;
                   ty += pgm_read_byte(pto + 1) >> 1;
@@ -1421,10 +1423,10 @@ void setup() {
   Wire.begin();
   if(digitalRead(BUTTON_A_PIN) == 0) {
     Serial.println("Will Load menu binary");
-    updateFromFS(SD);
+    sdUpdater.updateFromFS(SD);
     ESP.restart();
   }
-  M5.Lcd.setRotation(3);
+  M5.Lcd.setRotation(2);
   M5.Lcd.fillScreen(TFT_BLACK);
   pinMode(5, INPUT_PULLUP);
   

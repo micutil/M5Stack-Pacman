@@ -31,8 +31,8 @@ typedef unsigned char uchar;
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 //typedef unsigned long uint32_t;
-#define pgm_read_byte(_x) (*(_x))
-#define pgm_read_word(_x) (*(_x))
+//#define pgm_read_byte(_x) (*(_x))
+//#define pgm_read_word(_x) (*(_x))
 
 
 #ifndef _max
