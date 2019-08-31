@@ -1,4 +1,19 @@
-# M5Stack-Pacman-JoyPSP
+# Pacman for Odroid-GO & M5Stack
+
+<img src="ogpacman.jpg" width="400">
+
+### Modified by Micutil
+
+- Added binary for Odroid-GO ([using ESP32-Chimera-Core](https://github.com/tobozo/ESP32-Chimera-Core)).
+
+### Control with Odroid-GO
+
+- Start: A button (Upper left side).
+- Start: B button (Upper right side).
+- Move pacman: Cross key
+
+-------------------------
+### Original READ ME
 
 A fork from [MhageGH/esp32_ILI9328_Pacman](https://github.com/MhageGH/esp32_ILI9328_Pacman) focused on [M5Stack SD Menu Loader](https://github.com/tobozo/M5Stack-SD-Updater) support.
 
