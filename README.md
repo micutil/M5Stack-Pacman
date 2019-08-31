@@ -4,7 +4,8 @@
 
 ### Modified by Micutil
 
-- Added binary for Odroid-GO ([using ESP32-Chimera-Core](https://github.com/tobozo/ESP32-Chimera-Core)).
+- Modified sketch for Odroid-GO ([using ESP32-Chimera-Core](https://github.com/tobozo/ESP32-Chimera-Core)).
+- Added binary for Odroid-GO
 
 ### Control with Odroid-GO
 
