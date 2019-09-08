@@ -22,30 +22,22 @@
  *  Buttons UP, RIGHT, DOWN, LEFT, PAUSE and RESTART are each assigned on characters '8', '6', '2', '4', 'x', 'z' in the both case of SerialPort and WiFi UDP.
  */
 
-/******************************************************************************/
-//Modified by Micutil
-//Added binary for Odroid-GO (using ESP32-Chimera-Core).
-//  without sounds (not compatible sounds).
-/******************************************************************************/
-
 #include <M5Stack.h>
 #include "M5StackUpdater.h"
-#ifndef ARDUINO_ODROID_ESP32
-  #include "Game_Audio.h";
-  #include "SoundData.h";
-  
-  #define kPLAYGAMESOUND
-  #ifdef kPLAYGAMESOUND
-  Game_Audio_Class GameAudio(25,0);
-  Game_Audio_Wav_Class pmDeath(pacmanDeath); // pacman dyingsound
-  Game_Audio_Wav_Class pmWav(pacman); // pacman theme
-  Game_Audio_Wav_Class pmChomp(chomp); // pacman chomp
-  Game_Audio_Wav_Class pmEatGhost(pacman_eatghost); // pacman theme
-  #endif
-  
-#endif
+#include "Game_Audio.h"
+#include "SoundData.h"
 
-byte SPEED = 1; // 1=SLOW 2=NORMAL 4=FAST //do not try  other values!!!
+Game_Audio_Class GameAudio(25,0);
+ 
+Game_Audio_Wav_Class pmDeath(pacmanDeath); // pacman dyingsound
+Game_Audio_Wav_Class pmWav(pacman); // pacman theme
+Game_Audio_Wav_Class pmChomp(chomp); // pacman chomp
+Game_Audio_Wav_Class pmEatGhost(pacman_eatghost); // pacman theme
+
+SDUpdater sdUpdater;
+
+
+byte SPEED = 2; // 1=SLOW 2=NORMAL 4=FAST //do not try  other values!!!
 
 /******************************************************************************/
 /*   MAIN GAME VARIABLES                                                      */
@@ -193,7 +185,7 @@ const byte _opposite[] = { MStopped, MLeft, MUp, MRight, MDown };
 
 const byte _scatterChase[] = { 7, 20, 7, 20, 5, 20, 5, 0 };
 const byte _scatterTargets[] = { 2, 0, 25, 0, 0, 35, 27, 35 }; // inky/clyde scatter targets are backwards
-const char _pinkyTargetOffset[] = { 4, 0, 0, 4, -4, 0, -4, 4 }; // Includes pinky target bug
+const signed char _pinkyTargetOffset[] = { 4, 0, 0, 4, -4, 0, -4, 4 }; // Includes pinky target bug
 
 #define FRIGHTENEDGHOSTSPRITE 0
 #define GHOSTSPRITE 2
@@ -883,14 +875,14 @@ class Playfield
             {
               case PINKY:
                 {
-                  const char* pto = _pinkyTargetOffset + ((pacman->dir - 1) << 1);
+                  const signed char* pto = _pinkyTargetOffset + ((pacman->dir - 1) << 1);
                   tx += pgm_read_byte(pto);
                   ty += pgm_read_byte(pto + 1);
                 }
                 break;
               case INKY:
                 {
-                  const char* pto = _pinkyTargetOffset + ((pacman->dir - 1) << 1);
+                  const signed char* pto = _pinkyTargetOffset + ((pacman->dir - 1) << 1);
                   Sprite* binky = _sprites + BINKY;
                   tx += pgm_read_byte(pto) >> 1;
                   ty += pgm_read_byte(pto + 1) >> 1;
@@ -982,11 +974,9 @@ class Playfield
     void PackmanDied() {  // Noooo... PACMAN DIED :(
 
       if(DEMO == 0) {
-        #ifdef kPLAYGAMESOUND
         GameAudio.PlayWav(&pmDeath, true, 1.0);
         // wait until done
         while(GameAudio.IsPlaying());
-        #endif
       }
 
       if (LIFES <= 0) {
@@ -1176,9 +1166,7 @@ class Playfield
           if (s->state == FrightenedState)
           {
             if (DEMO == 0) {
-              #ifdef kPLAYGAMESOUND
               GameAudio.PlayWav(&pmEatGhost, true, 1.0);
-              #endif
             }
             
             s->state = DeadNumberState;     // Killed a ghost
@@ -1271,9 +1259,7 @@ class Playfield
       byte mask = 0x80 >> (cx & 7);
       _dotMap[(cy - 3) * 4 + (cx >> 3)] &= ~mask;
       if(DEMO == 0) {
-        #ifdef kPLAYGAMESOUND
         GameAudio.PlayWav(&pmChomp, false, 1.0);
-        #endif
       }
 
       byte t = GetTile(cx, cy);
@@ -1382,11 +1368,9 @@ class Playfield
       if (but_A && DEMO == 1 && GAMEPAUSED == 0) {
         but_A = false;
         DEMO = 0;
-        #ifdef kPLAYGAMESOUND
         GameAudio.PlayWav(&pmWav, false, 1.0);
         // wait until done
         //while(GameAudio.IsPlaying()){ }
-        #endif
         Init();
       } else if (but_A && DEMO == 0 && GAMEPAUSED == 0) { // Or PAUSE GAME
         but_A = false;
@@ -1427,43 +1411,28 @@ class Playfield
 /******************************************************************************/
 
 #define BLACK 0x0000 // 16bit BLACK Color
-#ifndef ARDUINO_ODROID_ESP32
 #define JOY_X 35
 #define JOY_Y 36
-#else
-#define JOY_X 34
-#define JOY_Y 35
-#endif
-
-int upSide=3; //1=right side up, 3=left side up
 
 bool joyPadDetected = false;
 
 void setup() {
   randomSeed(analogRead(0));
-  //Serial.begin(115200);
-  //delay(2000);
-  //Serial.println("Serial...OK");
-  
+  Serial.begin(115200);  
   M5.begin();
   Wire.begin();
   if(digitalRead(BUTTON_A_PIN) == 0) {
     Serial.println("Will Load menu binary");
-    updateFromFS(SD);
+    sdUpdater.updateFromFS(SD);
     ESP.restart();
   }
-  #ifndef ARDUINO_ODROID_ESP32
   M5.Lcd.setRotation(2);
-  #else
-  M5.Lcd.setRotation(upSide);//1=right side up, 3=left side up
-  #endif
   M5.Lcd.fillScreen(TFT_BLACK);
-  //pinMode(5, INPUT_PULLUP);
+  pinMode(5, INPUT_PULLUP);
   
   pinMode(JOY_X, INPUT);
   pinMode(JOY_Y, INPUT);
-
-  /*
+  
   float totalx = 0;
   float totaly = 0;
   uint16_t i;
@@ -1473,7 +1442,7 @@ void setup() {
   }
   totalx /=i;
   totaly /=i;
-  
+
   if(totalx<10 && totaly<10) { 
     Serial.print( totalx);
     Serial.print("**--\t--**");
@@ -1482,10 +1451,6 @@ void setup() {
   } else {
     joyPadDetected = true;
   }
-  */
-  //delay(2000);
-  //randomSeed(analogRead(0));
-  Serial.println("Setup...OK");
   delay(100);
 }
 
@@ -1502,6 +1467,9 @@ void ClearKeys() {
   but_RIGHT=false;
 }
 
+
+
+
 void KeyPadLoop(){
   
   if(digitalRead(BUTTON_A_PIN) == 0) {
@@ -1511,24 +1479,13 @@ void KeyPadLoop(){
     return;
   }
   if(digitalRead(BUTTON_B_PIN) == 0) {
-
-    #ifdef ARDUINO_ODROID_ESP32
-    // Rotation
-    upSide==1?upSide=3:upSide=1;
-    M5.Lcd.setRotation(upSide);
-    Serial.println(upSide);
-    #endif
-    
     // start
     ClearKeys();
     but_B=true; delay(300);
     return;
-    
   }
-
   // if(digitalRead(BUTTON_C_PIN) == 0) ?
-  
-  #ifndef ARDUINO_ODROID_ESP32
+
   if(joyPadDetected) {
     uint16_t joyX = analogRead(JOY_X);
     uint16_t joyY = analogRead(JOY_Y);
@@ -1557,14 +1514,6 @@ void KeyPadLoop(){
     if (r == '4') { ClearKeys(); but_LEFT=true; }   //else but_LEFT=false;
     if (r == '6') { ClearKeys(); but_RIGHT=true; }  //else but_RIGHT=false;
   }
-  #else
-  uint16_t joyX = analogRead(JOY_X); //Serial.println(joyX);
-  uint16_t joyY = analogRead(JOY_Y); //Serial.println(joyY);
-  if(joyX>0&&joyX<2000) { ClearKeys(); upSide==3? but_DOWN=true: but_UP=true; }
-  if(joyX>3000)         { ClearKeys(); upSide==3? but_UP=true:   but_DOWN=true; }
-  if(joyY>0&&joyY<2000) { ClearKeys(); upSide==3? but_LEFT=true: but_RIGHT=true; }
-  if(joyY>3000)         { ClearKeys(); upSide==3? but_RIGHT=true:but_LEFT=true; }
-  #endif
 }
 
 
