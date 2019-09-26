@@ -7,6 +7,17 @@
 - Modified sketch for Odroid-GO ([using ESP32-Chimera-Core](https://github.com/tobozo/ESP32-Chimera-Core)).
 - Added binary for Odroid-GO
 
+### Copy the built binnary progurams to microSD
+
+- Copy the files in the microSD folder to the root of microSD.
+- Set the microSD into Odroid-GO
+- Select and launche the program with LovyanLauncher.
+- For the original Odroid-GO firmware, no launcher is needed. Switch on with the B button pressed, select the program and launch it. It is necessary to turn the switch on again after startup.
+
+### Programs
+- in OG_Gamebin ... Arduino program for Odroid-GO
+- in odroid/firmwares ... fw file for Odroid-GO
+
 ### Control with Odroid-GO
 
 - Start: A button (Upper left side).
